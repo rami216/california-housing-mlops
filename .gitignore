@@ -1,0 +1,10 @@
+hosuingprvenv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+data/
+models/
+learning/
+*.egg-info/

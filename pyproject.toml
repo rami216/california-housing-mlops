@@ -1,0 +1,14 @@
+[project]
+name = "ca-housing"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy<2",
+    "pandas",
+    "scikit-learn",
+    "torch",
+    "joblib",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
