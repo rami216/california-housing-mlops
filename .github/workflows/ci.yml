@@ -34,6 +34,9 @@ jobs:
       - name: Train model
         run: python scripts/train_model.py
 
+      - name: Build reference stats
+        run: python scripts/reference_stats.py
+
       - name: Evaluate
         run: python scripts/evaluate.py
 
@@ -86,6 +89,8 @@ jobs:
           curl --fail -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
             -d '{"MedInc": 8.3252, "HouseAge": 41, "AveRooms": 6.984127, "AveBedrms": 1.02381, "Population": 322, "AveOccup": 2.555556, "Latitude": 37.88, "Longitude": -122.23}'
+          curl --fail http://localhost:8000/metrics -o /dev/null
+          curl --fail http://localhost:8000/drift
           docker stop api
 
       - name: Push to GHCR

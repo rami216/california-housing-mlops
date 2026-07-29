@@ -75,6 +75,33 @@ container and hits it with a real HTTP request. Only then does it publish to
 GHCR. Every image is tagged with its commit SHA, and every model file records
 the commit that produced it.
 
+## Monitoring
+
+Three endpoints beyond `/predict`:
+
+- `/health` — liveness, used by the Docker healthcheck
+- `/metrics` — Prometheus format: request counts, latency histogram,
+  prediction distribution, per-feature PSI, extrapolation count
+- `/drift` — PSI of the last 500 requests against the training distribution
+
+Every prediction logs one JSON line with all eight inputs, the output, the
+latency, the model version, and a request ID.
+
+**Drift detection** uses Population Stability Index against bin edges saved
+from the training split. Sending 500 rows from the training distribution gives
+PSI around 0.02 per feature. Sending a synthetic "wealthy coastal" population
+gives 10.6 on `MedInc` — while every request still returns 200 OK with normal
+latency and clean logs.
+
+That gap is the point. In that test the model also returned predictions up to
+6.40, above the 5.00001 ceiling of everything it was trained on. Nothing in the
+HTTP layer, the logs, or the health check indicates a problem. Stale models
+don't crash, they quietly stop being right.
+
+PSI has a noise floor of roughly `(bins - 1) / N`, so with 10 bins the monitor
+refuses to report below 200 samples — otherwise the standard 0.1 threshold
+produces constant false alarms.
+
 ## Layout
 
 ```

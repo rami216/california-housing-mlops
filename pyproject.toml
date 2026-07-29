@@ -8,7 +8,8 @@ dependencies = [
     "scikit-learn",
     "torch",
     "joblib",
+    "structlog",
+    "prometheus-client",
 ]
-
 [project.optional-dependencies]
 dev = ["pytest"]
