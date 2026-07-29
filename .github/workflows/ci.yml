@@ -50,6 +50,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,17 +64,32 @@ jobs:
           name: model-artifacts
           path: models/
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build image
-        run: docker build -t ca-housing:${{ github.sha }} .
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}
+          IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
 
       - name: Smoke test the container
         run: |
-          docker run -d --name api -p 8000:8000 ca-housing:${{ github.sha }}
-          sleep 15
+          docker run -d --name api -p 8000:8000 $IMAGE:${{ github.sha }}
+          sleep 20
           curl --fail http://localhost:8000/health
           curl --fail -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
-            -d '{"MedInc": 8.3252, "HouseAge": 41, "AveRooms": 6.984127,
-                 "AveBedrms": 1.02381, "Population": 322, "AveOccup": 2.555556,
-                 "Latitude": 37.88, "Longitude": -122.23}'
+            -d '{"MedInc": 8.3252, "HouseAge": 41, "AveRooms": 6.984127, "AveBedrms": 1.02381, "Population": 322, "AveOccup": 2.555556, "Latitude": 37.88, "Longitude": -122.23}'
           docker stop api
+
+      - name: Push to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
